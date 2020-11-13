@@ -11,8 +11,32 @@ namespace spawsh
 
         static void Main(string[] args)
         {
+
             string server = "gemini.circumlunar.space";
             string page = "/";
+
+            if (args.Length > 0)
+            {
+                string hostArgument = args[0];
+
+                Console.WriteLine(hostArgument);
+
+                if (hostArgument.Contains("/"))
+                {
+                    int firstSlashIndex = hostArgument.IndexOf('/');
+
+                    server = hostArgument.Remove(firstSlashIndex);
+                    page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
+
+                    Console.WriteLine(server);
+                    Console.WriteLine(page);
+                }
+                else
+                {
+                    server = hostArgument;
+                }
+                
+            }
 
             TcpClient client = new TcpClient(server, 1965);
 
