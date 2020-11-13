@@ -45,8 +45,7 @@ namespace spawsh
                 new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
             {
                 sslStream.AuthenticateAsClient(server);
-                // This is where you read and send data
-                Console.WriteLine(server + page + Environment.NewLine);
+
                 byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
                 sslStream.Write(messageToSend);
 
@@ -54,7 +53,6 @@ namespace spawsh
 
                 handleResponse(responseData);
 
-                Console.ReadKey();
             }
             client.Close();
         }
@@ -113,13 +111,16 @@ namespace spawsh
 
             }
 
-            Console.WriteLine(responseHeader);
-
             string responseCode = responseHeader.Split(' ')[0];
 
             if (responseCode == "20")
             {
                 Console.WriteLine(responseBody);
+            }
+            else if (responseCode[0] == '3')
+            {
+                Console.WriteLine("Redirect to {0}", responseHeader.Split(' ')[1]);
+                Console.WriteLine("Try again at new url above.");
             }
             else if (responseCode == "50")
             {
