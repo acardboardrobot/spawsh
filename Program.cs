@@ -14,6 +14,7 @@ namespace spawsh
 
             string server = "gemini.circumlunar.space";
             string page = "/";
+            bool validProtocol = true;
 
             if (args.Length > 0)
             {
@@ -21,15 +22,23 @@ namespace spawsh
 
                 Console.WriteLine(hostArgument);
 
+                if (hostArgument.Contains("gemini://"))
+                {
+                    hostArgument = hostArgument.Trim();
+                    hostArgument = hostArgument.Substring(9);
+                }
+                else if (hostArgument.Contains("https://") || hostArgument.Contains("http://") || hostArgument.Contains("gopher://"))
+                {
+                    Console.WriteLine("Protocol not supported.");
+                    validProtocol = false;
+                }
+
                 if (hostArgument.Contains("/"))
                 {
                     int firstSlashIndex = hostArgument.IndexOf('/');
 
                     server = hostArgument.Remove(firstSlashIndex);
                     page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
-
-                    Console.WriteLine(server);
-                    Console.WriteLine(page);
                 }
                 else
                 {
@@ -38,23 +47,28 @@ namespace spawsh
                 
             }
 
-            TcpClient client = new TcpClient(server, 1965);
 
-
-            using (SslStream sslStream = new SslStream(client.GetStream(), false,
-                new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+            if (validProtocol)
             {
-                sslStream.AuthenticateAsClient(server);
+                TcpClient client = new TcpClient(server, 1965);
 
-                byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
-                sslStream.Write(messageToSend);
 
-                string responseData = ReadMessage(sslStream);
+                using (SslStream sslStream = new SslStream(client.GetStream(), false,
+                    new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+                {
+                    sslStream.AuthenticateAsClient(server);
 
-                handleResponse(responseData);
+                    byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
+                    sslStream.Write(messageToSend);
 
+                    string responseData = ReadMessage(sslStream);
+
+                    handleResponse(responseData);
+
+                }
+                client.Close();
             }
-            client.Close();
+            
         }
 
         public static bool ValidateServerCertificate(object sender, X509Certificate certificate,
