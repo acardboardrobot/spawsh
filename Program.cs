@@ -9,6 +9,13 @@ namespace spawsh
     class Program
     {
 
+        static string server = "gemini.circumlunar.space";
+        static string page = "/";
+        static string[] LineBuffer;
+        static bool inInteractive = false;
+        static int currentLine = 0;
+        static int selectedLinkIndex = 0;
+
         static void Main(string[] args)
         {
 
@@ -16,57 +23,69 @@ namespace spawsh
             string page = "/";
             bool validProtocol = true;
 
+            int windowLineCount = Console.WindowHeight;
+            
+
             if (args.Length > 0)
             {
                 string hostArgument = args[0];
 
-                Console.WriteLine(hostArgument);
-
-                if (hostArgument.Contains("gemini://"))
+                if (hostArgument == "-i")
                 {
-                    hostArgument = hostArgument.Trim();
-                    hostArgument = hostArgument.Substring(9);
-                }
-                else if (hostArgument.Contains("https://") || hostArgument.Contains("http://") || hostArgument.Contains("gopher://"))
-                {
-                    Console.WriteLine("Protocol not supported.");
-                    validProtocol = false;
-                }
+                    inInteractive = true;
+                    string[] LineBuffer = new string[windowLineCount];
 
-                if (hostArgument.Contains("/"))
-                {
-                    int firstSlashIndex = hostArgument.IndexOf('/');
-
-                    server = hostArgument.Remove(firstSlashIndex);
-                    page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
+                    while (inInteractive)
+                    {
+                        interactiveLoop();
+                    }
                 }
                 else
                 {
-                    server = hostArgument;
+                    if (hostArgument.Contains("gemini://"))
+                    {
+                        hostArgument = hostArgument.Trim();
+                        hostArgument = hostArgument.Substring(9);
+                    }
+                    else if (hostArgument.Contains("https://") || hostArgument.Contains("http://") || hostArgument.Contains("gopher://"))
+                    {
+                        Console.WriteLine("Protocol not supported.");
+                        validProtocol = false;
+                    }
+
+                    if (hostArgument.Contains("/"))
+                    {
+                        int firstSlashIndex = hostArgument.IndexOf('/');
+
+                        server = hostArgument.Remove(firstSlashIndex);
+                        page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
+                    }
+                    else
+                    {
+                        server = hostArgument;
+                    }
+
+                    if (validProtocol)
+                    {
+                        TcpClient client = new TcpClient(server, 1965);
+
+
+                        using (SslStream sslStream = new SslStream(client.GetStream(), false,
+                            new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+                        {
+                            sslStream.AuthenticateAsClient(server);
+
+                            byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
+                            sslStream.Write(messageToSend);
+
+                            string responseData = ReadMessage(sslStream);
+
+                            handleResponse(responseData);
+
+                        }
+                        client.Close();
+                    }
                 }
-                
-            }
-
-
-            if (validProtocol)
-            {
-                TcpClient client = new TcpClient(server, 1965);
-
-
-                using (SslStream sslStream = new SslStream(client.GetStream(), false,
-                    new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
-                {
-                    sslStream.AuthenticateAsClient(server);
-
-                    byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
-                    sslStream.Write(messageToSend);
-
-                    string responseData = ReadMessage(sslStream);
-
-                    handleResponse(responseData);
-
-                }
-                client.Close();
             }
             
         }
@@ -74,6 +93,112 @@ namespace spawsh
         public static bool ValidateServerCertificate(object sender, X509Certificate certificate,
         X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
+            return true;
+        }
+
+        public static void interactiveLoop()
+        {
+            Console.Clear();
+            LineBuffer = fetchPage();
+
+            for (int i = 1; i < LineBuffer.Length; i++)
+            {
+                Console.WriteLine(LineBuffer[i]);
+            }
+
+            for (int i = 0; i < Console.WindowWidth; i++)
+            {
+                Console.Write("-");
+            }
+            Console.Write('\n');
+
+            for (int i = 0; i < Console.WindowWidth - LineBuffer[0].Length; i++)
+            {
+                Console.Write(" ");    
+            }
+            Console.WriteLine(LineBuffer[0]);
+
+            ConsoleKeyInfo keyRead = Console.ReadKey();
+
+            if (keyRead.Key == ConsoleKey.Escape)
+            {
+                inInteractive = false;
+            }
+            else if (keyRead.Key == ConsoleKey.Enter)
+            {
+                string newInput = Console.ReadLine();
+                Console.WriteLine(newInput);
+                if (buildRequest(newInput))
+                {
+                    LineBuffer = fetchPage();
+                }
+                //server = blah
+                //page = blah
+                //LineBuffer = fetchPage();
+            }
+            else if (keyRead.Key == ConsoleKey.DownArrow)
+            {
+                selectedLinkIndex++;
+            }
+            else if (keyRead.Key == ConsoleKey.UpArrow)
+            {
+                selectedLinkIndex--;
+            }
+
+            if (selectedLinkIndex < 0)
+            {
+                selectedLinkIndex = 0;
+            }
+        }
+
+        public static string[] fetchPage()
+        {
+            TcpClient client = new TcpClient(server, 1965);
+            string responseData;
+
+            using (SslStream sslStream = new SslStream(client.GetStream(), false,
+                new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+            {
+                sslStream.AuthenticateAsClient(server);
+
+                byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
+                sslStream.Write(messageToSend);
+
+                responseData = ReadMessage(sslStream);
+
+                //handleResponse(responseData);
+
+            }
+            client.Close();
+
+            return responseData.Split('\n');
+        }
+
+        public static bool buildRequest(string inputString)
+        {
+            if (inputString.Contains("gemini://"))
+            {
+                inputString = inputString.Trim();
+                inputString = inputString.Substring(9);
+            }
+            else if (inputString.Contains("https://") || inputString.Contains("http://") || inputString.Contains("gopher://"))
+            {
+                Console.WriteLine("Protocol not supported.");
+                return false;
+            }
+
+            if (inputString.Contains("/"))
+            {
+                int firstSlashIndex = inputString.IndexOf('/');
+
+                server = inputString.Remove(firstSlashIndex);
+                page = inputString.Substring(firstSlashIndex, inputString.Length - firstSlashIndex);
+            }
+            else
+            {
+                server = inputString;
+            }
+
             return true;
         }
 
