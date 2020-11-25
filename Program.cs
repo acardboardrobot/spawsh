@@ -15,6 +15,7 @@ namespace spawsh
         static string[] linksInPage;
         static bool inInteractive = false;
         static int selectedLinkIndex = -1;
+        static string currentPage;
 
         static void Main(string[] args)
         {
@@ -23,8 +24,7 @@ namespace spawsh
             string page = "/";
             bool validProtocol = true;
 
-            int windowLineCount = Console.WindowHeight;
-            
+            int windowLineCount = Console.WindowHeight;            
 
             if (args.Length > 0)
             {
@@ -34,6 +34,13 @@ namespace spawsh
                 {
                     inInteractive = true;
                     string[] LineBuffer = new string[windowLineCount];
+
+                    buildRequest(server + page);
+                    LineBuffer = fetchPage();
+                    linksInPage = buildLinkSet(LineBuffer);
+
+                    Console.WriteLine("Fetching first page");
+                    Console.ReadKey();
 
                     while (inInteractive)
                     {
@@ -99,8 +106,6 @@ namespace spawsh
         public static void interactiveLoop()
         {
             Console.Clear();
-            LineBuffer = fetchPage();
-            linksInPage = buildLinkSet(LineBuffer);
 
             for (int i = 1; i < LineBuffer.Length; i++)
             {
@@ -213,7 +218,15 @@ namespace spawsh
             {
                 int firstSlashIndex = inputString.IndexOf('/');
 
-                server = inputString.Remove(firstSlashIndex);
+                if (firstSlashIndex == 0 || firstSlashIndex == 1)
+                {
+                    Console.WriteLine("Should be same server");
+                }
+                else
+                {
+                    server = inputString.Remove(firstSlashIndex);
+                }
+                
                 page = inputString.Substring(firstSlashIndex, inputString.Length - firstSlashIndex);
             }
             else
