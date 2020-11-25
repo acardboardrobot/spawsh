@@ -12,9 +12,9 @@ namespace spawsh
         static string server = "gemini.circumlunar.space";
         static string page = "/";
         static string[] LineBuffer;
+        static string[] linksInPage;
         static bool inInteractive = false;
-        static int currentLine = 0;
-        static int selectedLinkIndex = 0;
+        static int selectedLinkIndex = -1;
 
         static void Main(string[] args)
         {
@@ -100,6 +100,7 @@ namespace spawsh
         {
             Console.Clear();
             LineBuffer = fetchPage();
+            linksInPage = buildLinkSet(LineBuffer);
 
             for (int i = 1; i < LineBuffer.Length; i++)
             {
@@ -118,6 +119,11 @@ namespace spawsh
             }
             Console.WriteLine(LineBuffer[0]);
 
+            if (selectedLinkIndex != -1)
+            {
+                Console.WriteLine(linksInPage[selectedLinkIndex]);
+            }
+
             ConsoleKeyInfo keyRead = Console.ReadKey();
 
             if (keyRead.Key == ConsoleKey.Escape)
@@ -126,32 +132,48 @@ namespace spawsh
             }
             else if (keyRead.Key == ConsoleKey.Enter)
             {
-                string newInput = Console.ReadLine();
+                string newInput;
+
+                if (selectedLinkIndex == -1)
+                {
+                    Console.Write("url: ");
+                    newInput = Console.ReadLine();
+                }
+                else
+                {
+                    newInput = linksInPage[selectedLinkIndex];
+                }
+
                 Console.WriteLine(newInput);
                 if (buildRequest(newInput))
                 {
                     LineBuffer = fetchPage();
+
+                    linksInPage = buildLinkSet(LineBuffer);
                 }
-                //server = blah
-                //page = blah
-                //LineBuffer = fetchPage();
             }
-            else if (keyRead.Key == ConsoleKey.DownArrow)
+            else if (keyRead.Key == ConsoleKey.RightArrow)
             {
-                selectedLinkIndex++;
+                if (selectedLinkIndex < linksInPage.Length - 1)
+                {
+                    selectedLinkIndex++;
+                }
             }
-            else if (keyRead.Key == ConsoleKey.UpArrow)
+            else if (keyRead.Key == ConsoleKey.LeftArrow)
             {
-                selectedLinkIndex--;
+                if (selectedLinkIndex > -1)
+                {
+                    selectedLinkIndex--;
+                }
             }
 
             if (selectedLinkIndex < 0)
             {
-                selectedLinkIndex = 0;
+                selectedLinkIndex = -1;
             }
         }
 
-        public static string[] fetchPage()
+        static string[] fetchPage()
         {
             TcpClient client = new TcpClient(server, 1965);
             string responseData;
@@ -174,7 +196,7 @@ namespace spawsh
             return responseData.Split('\n');
         }
 
-        public static bool buildRequest(string inputString)
+        static bool buildRequest(string inputString)
         {
             if (inputString.Contains("gemini://"))
             {
@@ -200,6 +222,32 @@ namespace spawsh
             }
 
             return true;
+        }
+
+        static string[] buildLinkSet(string[] lines)
+        {
+            string[] linkSet = Array.Empty<string>();
+            int counter = 0;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Length > 2)
+                {
+                    if (lines[i].Substring(0, 2) == "=>")
+                    {
+                        string[] biggerArray = new string[counter + 1];
+                        for (int e = 0; e < linkSet.Length; e++)
+                        {
+                            biggerArray[e] = linkSet[e];
+                        }
+                        biggerArray[counter] = lines[i].Split(' ')[1];
+                        linkSet = biggerArray;
+                        counter++;
+                    }
+                }
+            }
+
+            return linkSet;
         }
 
         static string ReadMessage(SslStream sslStream)
