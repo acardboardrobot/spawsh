@@ -26,21 +26,19 @@ namespace spawsh
 
             int windowLineCount = Console.WindowHeight;            
 
-            if (args.Length > 0)
+            if (args.Length == 0)
             {
-                string hostArgument = args[0];
+                //string hostArgument = args[0];
+                string hostArgument = "-i";
 
                 if (hostArgument == "-i")
                 {
                     inInteractive = true;
-                    string[] LineBuffer = new string[windowLineCount];
+                    LineBuffer = new string[windowLineCount];
 
                     buildRequest(server + page);
                     LineBuffer = fetchPage();
                     linksInPage = buildLinkSet(LineBuffer);
-
-                    Console.WriteLine("Fetching first page");
-                    Console.ReadKey();
 
                     while (inInteractive)
                     {
@@ -152,10 +150,14 @@ namespace spawsh
                 Console.WriteLine(newInput);
                 if (buildRequest(newInput))
                 {
+                    Console.WriteLine("Fetching {0}", newInput);
+
                     LineBuffer = fetchPage();
 
                     linksInPage = buildLinkSet(LineBuffer);
                 }
+
+                selectedLinkIndex = -1;
             }
             else if (keyRead.Key == ConsoleKey.RightArrow)
             {
@@ -183,6 +185,8 @@ namespace spawsh
             TcpClient client = new TcpClient(server, 1965);
             string responseData;
 
+            Console.WriteLine("Enter");
+
             using (SslStream sslStream = new SslStream(client.GetStream(), false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
             {
@@ -197,6 +201,8 @@ namespace spawsh
 
             }
             client.Close();
+
+            Console.WriteLine("Exit");
 
             return responseData.Split('\n');
         }
@@ -254,6 +260,18 @@ namespace spawsh
                             biggerArray[e] = linkSet[e];
                         }
                         biggerArray[counter] = lines[i].Split(' ')[1];
+
+                        if (biggerArray[counter].Contains('\t'))
+                        {
+                            biggerArray[counter] = biggerArray[counter].Split('\t')[0];
+                        }
+
+                        if (!biggerArray[counter].Contains('.'))
+                        {
+                            Console.WriteLine("local link i think");
+                            biggerArray[counter] = server + "/" + biggerArray[counter];
+                        }
+
                         linkSet = biggerArray;
                         counter++;
                     }
