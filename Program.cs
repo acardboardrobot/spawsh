@@ -26,10 +26,9 @@ namespace spawsh
 
             int windowLineCount = Console.WindowHeight;            
 
-            if (args.Length == 0)
+            if (args.Length > 0)
             {
-                //string hostArgument = args[0];
-                string hostArgument = "-i";
+                string hostArgument = args[0];
 
                 if (hostArgument == "-i")
                 {
@@ -92,7 +91,12 @@ namespace spawsh
                     }
                 }
             }
-            
+            else
+            {
+                buildRequest(server);
+                fetchPage();
+            }
+
         }
 
         public static bool ValidateServerCertificate(object sender, X509Certificate certificate,
@@ -185,8 +189,6 @@ namespace spawsh
             TcpClient client = new TcpClient(server, 1965);
             string responseData;
 
-            Console.WriteLine("Enter");
-
             using (SslStream sslStream = new SslStream(client.GetStream(), false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
             {
@@ -201,8 +203,6 @@ namespace spawsh
 
             }
             client.Close();
-
-            Console.WriteLine("Exit");
 
             return responseData.Split('\n');
         }
