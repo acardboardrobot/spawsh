@@ -109,10 +109,11 @@ namespace spawsh
         {
             Console.Clear();
 
-            for (int i = 1; i < LineBuffer.Length; i++)
+            for (int i = 0; i < Console.WindowWidth - LineBuffer[0].Length; i++)
             {
-                Console.WriteLine(LineBuffer[i]);
+                Console.Write(" ");    
             }
+            Console.WriteLine(LineBuffer[0]);
 
             for (int i = 0; i < Console.WindowWidth; i++)
             {
@@ -120,11 +121,10 @@ namespace spawsh
             }
             Console.Write('\n');
 
-            for (int i = 0; i < Console.WindowWidth - LineBuffer[0].Length; i++)
+            for (int i = 1; i < LineBuffer.Length; i++)
             {
-                Console.Write(" ");    
+                Console.WriteLine(LineBuffer[i]);
             }
-            Console.WriteLine(LineBuffer[0]);
 
             if (selectedLinkIndex != -1)
             {
