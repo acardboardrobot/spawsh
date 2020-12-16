@@ -153,14 +153,10 @@ namespace spawsh
                 }
 
                 Console.WriteLine(newInput);
-                if (buildRequest(newInput))
-                {
-                    Console.WriteLine("Fetching {0}", newInput);
+                buildRequest(newInput);
+                LineBuffer = fetchPage();
 
-                    LineBuffer = fetchPage();
-
-                    linksInPage = buildLinkSet(LineBuffer);
-                }
+                linksInPage = buildLinkSet(LineBuffer);
 
                 selectedLinkIndex = -1;
             }
@@ -368,6 +364,26 @@ namespace spawsh
             else if (responseCode == "51")
             {
                 Console.WriteLine("File not found.");
+            }
+            else if (responseCode == "10")
+            {
+                string searchPageURL = server + page;
+                Console.Write("Search term: ");
+                string searchParams = Console.ReadLine();
+
+                page += "?" + searchParams;
+
+                Console.WriteLine(page);
+                Console.ReadKey();
+
+                buildRequest(server + page);
+                Console.WriteLine("Searching for {0}", searchParams);
+
+                LineBuffer = fetchPage();
+                linksInPage = buildLinkSet(LineBuffer);
+                selectedLinkIndex = -1;
+
+                Console.ReadKey();
             }
         }
 
