@@ -144,6 +144,7 @@ namespace spawsh
                 if (selectedLinkIndex == -1)
                 {
                     Console.Write("url: ");
+                    page = "";
                     newInput = Console.ReadLine();
                 }
                 else
@@ -199,7 +200,7 @@ namespace spawsh
 
                 responseData = ReadMessage(sslStream);
 
-                //handleResponse(responseData);
+                handleResponse(responseData);
 
             }
             client.Close();
@@ -226,7 +227,7 @@ namespace spawsh
 
                 if (firstSlashIndex == 0 || firstSlashIndex == 1)
                 {
-                    Console.WriteLine("Should be same server");
+                    //Should be same server
                 }
                 else
                 {
@@ -273,7 +274,7 @@ namespace spawsh
 
                         if (!biggerArray[counter].Contains('.'))
                         {
-                            Console.WriteLine("local link i think");
+                            //These should be local links
                             biggerArray[counter] = server + "/" + biggerArray[counter];
                         }
 
@@ -339,6 +340,21 @@ namespace spawsh
             if (responseCode == "20")
             {
                 Console.WriteLine(responseBody);
+            }
+            else if (responseCode == "31")
+            {
+                string redirectAddress = responseHeader.Split(' ')[1];
+
+                if (buildRequest(redirectAddress))
+                {
+                    Console.WriteLine("Redirect to {0}. Fetching.", redirectAddress);
+
+                    LineBuffer = fetchPage();
+
+                    linksInPage = buildLinkSet(LineBuffer);
+                }
+
+                selectedLinkIndex = -1;
             }
             else if (responseCode[0] == '3')
             {
