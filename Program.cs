@@ -235,6 +235,11 @@ namespace spawsh
                 
                 page = inputString.Substring(firstSlashIndex, inputString.Length - firstSlashIndex);
             }
+            else if (inputString.Split('.').Length == 2 && inputString.Split('.')[1] == "gmi")
+            {
+                inputString = "/" + inputString;
+                page = inputString;
+            }
             else
             {
                 server = inputString;
