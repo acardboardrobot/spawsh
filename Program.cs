@@ -152,13 +152,16 @@ namespace spawsh
                     newInput = linksInPage[selectedLinkIndex];
                 }
 
-                Console.WriteLine(newInput);
-                buildRequest(newInput);
-                LineBuffer = fetchPage();
+                if (newInput.Length != 0)
+                {
+                    buildRequest(newInput);
+                    LineBuffer = fetchPage();
 
-                linksInPage = buildLinkSet(LineBuffer);
+                    linksInPage = buildLinkSet(LineBuffer);
 
-                selectedLinkIndex = -1;
+                    selectedLinkIndex = -1;
+                }
+                
             }
             else if (keyRead.Key == ConsoleKey.RightArrow)
             {
@@ -183,22 +186,36 @@ namespace spawsh
 
         static string[] fetchPage()
         {
-            TcpClient client = new TcpClient(server, 1965);
-            string responseData;
+            TcpClient client = new TcpClient();
+            string responseData = "";
 
-            using (SslStream sslStream = new SslStream(client.GetStream(), false,
-                new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+            try
             {
-                sslStream.AuthenticateAsClient(server);
-
-                byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
-                sslStream.Write(messageToSend);
-
-                responseData = ReadMessage(sslStream);
-
-                handleResponse(responseData);
-
+                client.Connect(server, 1965);
             }
+            catch (SocketException error)
+            {
+                responseData = error.Message;
+            }
+
+            if (client != null && client.Connected)
+            {
+                using (SslStream sslStream = new SslStream(client.GetStream(), false,
+                new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
+                {
+                    sslStream.AuthenticateAsClient(server);
+
+                    byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
+                    sslStream.Write(messageToSend);
+
+                    responseData = ReadMessage(sslStream);
+
+                    handleResponse(responseData);
+
+                }
+            }
+
+            
             client.Close();
 
             return responseData.Split('\n');
