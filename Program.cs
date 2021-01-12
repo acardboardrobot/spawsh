@@ -155,7 +155,10 @@ namespace spawsh
                 if (newInput.Length != 0)
                 {
                     buildRequest(newInput);
-                    LineBuffer = fetchPage();
+
+                    string[] fetchedPage = fetchPage();
+
+                    LineBuffer = fetchedPage;
 
                     linksInPage = buildLinkSet(LineBuffer);
 
@@ -188,6 +191,7 @@ namespace spawsh
         {
             TcpClient client = new TcpClient();
             string responseData = "";
+            string[] fetchedOutput = new string[1024];
 
             try
             {
@@ -196,6 +200,7 @@ namespace spawsh
             catch (SocketException error)
             {
                 responseData = error.Message;
+                fetchedOutput[0] = error.Message;
             }
 
             if (client != null && client.Connected)
@@ -210,7 +215,7 @@ namespace spawsh
 
                     responseData = ReadMessage(sslStream);
 
-                    handleResponse(responseData);
+                    fetchedOutput = handleResponse(responseData);
 
                 }
             }
@@ -218,7 +223,7 @@ namespace spawsh
             
             client.Close();
 
-            return responseData.Split('\n');
+            return fetchedOutput;
         }
 
         static bool buildRequest(string inputString)
@@ -329,7 +334,7 @@ namespace spawsh
             return messageData.ToString();
         }
 
-        static void handleResponse(string responseData)
+        static string[] handleResponse(string responseData)
         {
             string[] responseLines = responseData.Split('\n');
             string responseBody = "";
@@ -354,7 +359,7 @@ namespace spawsh
             {
                 Console.WriteLine(responseBody);
             }
-            else if (responseCode == "31")
+            else if (responseCode[0] == '3')
             {
                 string redirectAddress = responseHeader.Split(' ')[1];
 
@@ -362,17 +367,12 @@ namespace spawsh
                 {
                     Console.WriteLine("Redirect to {0}. Fetching.", redirectAddress);
 
-                    LineBuffer = fetchPage();
+                    responseLines = fetchPage();
 
-                    linksInPage = buildLinkSet(LineBuffer);
+                    linksInPage = buildLinkSet(responseLines);
                 }
 
                 selectedLinkIndex = -1;
-            }
-            else if (responseCode[0] == '3')
-            {
-                Console.WriteLine("Redirect to {0}", responseHeader.Split(' ')[1]);
-                Console.WriteLine("Try again at new url above.");
             }
             else if (responseCode == "50")
             {
@@ -390,18 +390,15 @@ namespace spawsh
 
                 page += "?" + searchParams;
 
-                Console.WriteLine(page);
-                Console.ReadKey();
-
                 buildRequest(server + page);
                 Console.WriteLine("Searching for {0}", searchParams);
 
-                LineBuffer = fetchPage();
-                linksInPage = buildLinkSet(LineBuffer);
+                responseLines = fetchPage();
+                linksInPage = buildLinkSet(responseLines);
                 selectedLinkIndex = -1;
-
-                Console.ReadKey();
             }
+
+            return responseLines;
         }
 
     }
