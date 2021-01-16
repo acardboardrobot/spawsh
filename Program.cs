@@ -123,7 +123,18 @@ namespace spawsh
 
             for (int i = 1; i < LineBuffer.Length; i++)
             {
-                Console.WriteLine(LineBuffer[i]);
+                if (LineBuffer[i].Length < Console.WindowWidth)
+                {
+                    Console.WriteLine(LineBuffer[i]);
+                }
+                else if (LineBuffer[i].Substring(0, 2) == "=>")
+                {
+                    Console.WriteLine(LineBuffer[i]);
+                }
+                else
+                {
+                    lineWrapString(LineBuffer[i]);
+                }
             }
 
             if (selectedLinkIndex != -1)
@@ -399,6 +410,45 @@ namespace spawsh
             }
 
             return responseLines;
+        }
+
+        static void lineWrapString(string input)
+        {
+
+            if (input.Length > Console.WindowWidth)
+            {
+                //break it out into most characters before width breaking at a space
+                int lastNiceBreak = -1;
+                string outputString = "";
+                for (int i = 0; i < Console.WindowWidth; i++)
+                {
+                    if (input[i] == ' ')
+                    {
+                        lastNiceBreak = i;
+                    }
+                }
+                
+                //write it out
+                if (lastNiceBreak != -1)
+                {
+                    outputString = input.Substring(0, lastNiceBreak);
+                    Console.WriteLine(outputString);
+                    string remainingString = input.Substring(lastNiceBreak + 1);
+                    //call this on the remaining string
+                    lineWrapString(remainingString);
+                }
+                else
+                {
+                    Console.WriteLine(input);
+                }
+                
+
+                
+            }
+            else
+            {
+                Console.WriteLine(input);
+            }
         }
 
     }
