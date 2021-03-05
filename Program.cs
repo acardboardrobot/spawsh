@@ -30,71 +30,60 @@ namespace spawsh
             {
                 string hostArgument = args[0];
 
-                if (hostArgument == "-i")
+                if (hostArgument.Contains("gemini://"))
                 {
-                    inInteractive = true;
-                    LineBuffer = new string[windowLineCount];
+                    hostArgument = hostArgument.Trim();
+                    hostArgument = hostArgument.Substring(9);
+                }
+                else if (hostArgument.Contains("https://") || hostArgument.Contains("http://") || hostArgument.Contains("gopher://"))
+                {
+                    Console.WriteLine("Protocol not supported.");
+                    validProtocol = false;
+                }
 
-                    buildRequest(server + page);
-                    LineBuffer = fetchPage();
-                    linksInPage = buildLinkSet(LineBuffer);
-
-                    while (inInteractive)
-                    {
-                        interactiveLoop();
-                    }
+                if (hostArgument.Contains("/"))
+                {
+                    int firstSlashIndex = hostArgument.IndexOf('/');
+                    server = hostArgument.Remove(firstSlashIndex);
+                    page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
                 }
                 else
                 {
-                    if (hostArgument.Contains("gemini://"))
+                    server = hostArgument;
+                }
+                if (validProtocol)
+                {
+                    TcpClient client = new TcpClient(server, 1965);
+
+
+                    using (SslStream sslStream = new SslStream(client.GetStream(), false,
+                        new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
                     {
-                        hostArgument = hostArgument.Trim();
-                        hostArgument = hostArgument.Substring(9);
+                        sslStream.AuthenticateAsClient(server);
+                        byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
+                        sslStream.Write(messageToSend);
+
+                        string responseData = ReadMessage(sslStream);
+
+                        handleResponse(responseData);
+
                     }
-                    else if (hostArgument.Contains("https://") || hostArgument.Contains("http://") || hostArgument.Contains("gopher://"))
-                    {
-                        Console.WriteLine("Protocol not supported.");
-                        validProtocol = false;
-                    }
-
-                    if (hostArgument.Contains("/"))
-                    {
-                        int firstSlashIndex = hostArgument.IndexOf('/');
-
-                        server = hostArgument.Remove(firstSlashIndex);
-                        page = hostArgument.Substring(firstSlashIndex, hostArgument.Length - firstSlashIndex);
-                    }
-                    else
-                    {
-                        server = hostArgument;
-                    }
-
-                    if (validProtocol)
-                    {
-                        TcpClient client = new TcpClient(server, 1965);
-
-
-                        using (SslStream sslStream = new SslStream(client.GetStream(), false,
-                            new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
-                        {
-                            sslStream.AuthenticateAsClient(server);
-
-                            byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
-                            sslStream.Write(messageToSend);
-
-                            string responseData = ReadMessage(sslStream);
-
-                            handleResponse(responseData);
-
-                        }
-                        client.Close();
-                    }
+                    client.Close();
                 }
             }
             else
             {
-                buildRequest(server);
-                fetchPage();
+                inInteractive = true;
+                LineBuffer = new string[windowLineCount];
+
+                buildRequest(server + page);
+                LineBuffer = fetchPage();
+                linksInPage = buildLinkSet(LineBuffer);
+
+                while (inInteractive)
+                {
+                    interactiveLoop();
+                }
             }
 
         }
