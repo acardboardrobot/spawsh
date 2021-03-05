@@ -1,4 +1,4 @@
-﻿# SPAWSH
+# SPAWSH
 spawsh is a command line client for gemini. It can be used as a curl-ish utility or in interactive mode. There is a current build available at https://jpgleeson.com/spawsh/spawsh-current.tar
 
 ## Usage
