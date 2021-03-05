@@ -275,6 +275,11 @@ namespace spawsh
                 server = inputString;
             }
 
+            if (page.Length >= 2 && page[0] == '/' && page[1] == '/')
+            {
+                page = page.Substring(1);
+            }
+
             return true;
         }
 
