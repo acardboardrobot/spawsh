@@ -112,17 +112,20 @@ namespace spawsh
 
             for (int i = 1; i < LineBuffer.Length; i++)
             {
-                if (LineBuffer[i].Length < Console.WindowWidth)
+                if (LineBuffer[i] != null)
                 {
-                    Console.WriteLine(LineBuffer[i]);
-                }
-                else if (LineBuffer[i].Substring(0, 2) == "=>")
-                {
-                    Console.WriteLine(LineBuffer[i]);
-                }
-                else
-                {
-                    lineWrapString(LineBuffer[i]);
+                    if (LineBuffer[i].Length < Console.WindowWidth)
+                    {
+                        Console.WriteLine(LineBuffer[i]);
+                    }
+                    else if (LineBuffer[i].Substring(0, 2) == "=>")
+                    {
+                        Console.WriteLine(LineBuffer[i]);
+                    }
+                    else
+                    {
+                        lineWrapString(LineBuffer[i]);
+                    }
                 }
             }
 
@@ -160,7 +163,15 @@ namespace spawsh
 
                     LineBuffer = fetchedPage;
 
-                    linksInPage = buildLinkSet(LineBuffer);
+                    if (LineBuffer[0] == "No such host is known.")
+                    {
+
+                    }
+                    else
+                    {
+                        linksInPage = buildLinkSet(LineBuffer);
+                    }
+                    
 
                     selectedLinkIndex = -1;
                 }
