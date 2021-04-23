@@ -299,18 +299,34 @@ namespace spawsh
                         {
                             biggerArray[e] = linkSet[e];
                         }
-                        biggerArray[counter] = lines[i].Split(' ')[1];
 
-                        if (biggerArray[counter].Contains('\t'))
+                        string holder = null;
+
+                        try
                         {
-                            biggerArray[counter] = biggerArray[counter].Split('\t')[0];
+                            holder = lines[i].Split(' ')[1];
+                        }
+                        catch
+                        {
+
                         }
 
-                        if (!biggerArray[counter].Contains('.'))
+                        if (holder != null)
                         {
-                            //These should be local links
-                            biggerArray[counter] = server + "/" + biggerArray[counter];
+                            biggerArray[counter] = holder;
+
+                            if (biggerArray[counter].Contains('\t'))
+                            {
+                                biggerArray[counter] = biggerArray[counter].Split('\t')[0];
+                            }
+
+                            if (!biggerArray[counter].Contains('.'))
+                            {
+                                //These should be local links
+                                biggerArray[counter] = server + "/" + biggerArray[counter];
+                            }
                         }
+                        
 
                         linkSet = biggerArray;
                         counter++;
