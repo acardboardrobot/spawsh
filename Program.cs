@@ -165,7 +165,7 @@ namespace spawsh
 
                     if (LineBuffer[0] == "No such host is known.")
                     {
-
+                        linksInPage = new string[0];
                     }
                     else
                     {
