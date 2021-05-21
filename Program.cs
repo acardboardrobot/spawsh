@@ -300,11 +300,13 @@ namespace spawsh
                             biggerArray[e] = linkSet[e];
                         }
 
-                        string holder = null;
+                        string holder = lines[i].Substring(2);
+                        string description = null;
 
                         try
                         {
-                            holder = lines[i].Split(' ')[1];
+                            description = holder.Split('\t')[1];
+                            holder = holder.Split('\t')[0].Substring(1);
                         }
                         catch
                         {
