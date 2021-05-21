@@ -16,10 +16,11 @@ namespace spawsh
         static bool inInteractive = false;
         static int selectedLinkIndex = -1;
         static string currentPage;
+        static X509CertificateCollection collection;
 
         static void Main(string[] args)
         {
-
+            collection = new X509CertificateCollection();
             string server = "gemini.circumlunar.space";
             string page = "/";
             bool validProtocol = true;
@@ -91,6 +92,7 @@ namespace spawsh
         public static bool ValidateServerCertificate(object sender, X509Certificate certificate,
         X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
+            collection.Add(certificate);
             return true;
         }
 
@@ -219,6 +221,15 @@ namespace spawsh
                 using (SslStream sslStream = new SslStream(client.GetStream(), false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
                 {
+                    Console.WriteLine(collection.Count);
+                    foreach (X509Certificate cert in collection)
+                    {
+                        if (cert.GetType() == typeof(X509Certificate))
+                        {
+                            
+                        }
+                    }
+
                     sslStream.AuthenticateAsClient(server);
 
                     byte[] messageToSend = Encoding.UTF8.GetBytes("gemini://" + server + page + '\r' + '\n');
