@@ -16,10 +16,12 @@ namespace spawsh
         static bool inInteractive = false;
         static int selectedLinkIndex = -1;
         static string currentPage;
+        static X509Store certStore;
         static X509CertificateCollection collection;
 
         static void Main(string[] args)
         {
+            certStore = new X509Store(StoreLocation.CurrentUser);
             collection = new X509CertificateCollection();
             string server = "gemini.circumlunar.space";
             string page = "/";
@@ -92,7 +94,22 @@ namespace spawsh
         public static bool ValidateServerCertificate(object sender, X509Certificate certificate,
         X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            collection.Add(certificate);
+            bool certAlreadyExists = false;
+
+            foreach (X509Certificate2 cert in collection)
+            {
+                //See if we have it. If we do, we'll authenticate as client with server and the cert
+                //if not, just authenticate as client with server then save the resultant cert.
+                if (cert == certificate)
+                {
+                    certAlreadyExists = true;
+                    break;
+                }
+            }
+
+            X509Certificate2 X5092 = new X509Certificate2(certificate);
+
+            collection.Add(X5092);
             return true;
         }
 
@@ -218,17 +235,11 @@ namespace spawsh
 
             if (client != null && client.Connected)
             {
+                bool certAlreadyExists = false;
+                X509Certificate currentCert = new X509Certificate();
                 using (SslStream sslStream = new SslStream(client.GetStream(), false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate), null))
                 {
-                    Console.WriteLine(collection.Count);
-                    foreach (X509Certificate cert in collection)
-                    {
-                        if (cert.GetType() == typeof(X509Certificate))
-                        {
-                            
-                        }
-                    }
 
                     sslStream.AuthenticateAsClient(server);
 
@@ -239,6 +250,8 @@ namespace spawsh
 
                     fetchedOutput = handleResponse(responseData);
 
+
+                    sslStream.Close();
                 }
             }
 
